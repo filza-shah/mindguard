@@ -1,11 +1,7 @@
 // frontend/src/lib/auth-store.ts
 //
-// Global auth state using Zustand.
-//
-// WHY ZUSTAND OVER REACT CONTEXT?
-// Context causes unnecessary re-renders in large trees.
-// Zustand is a tiny (1KB) state manager — components only re-render
-// when the specific slice of state they subscribe to changes.
+// Same as before but now also sets/clears a cookie when logging in/out.
+// The cookie is needed by Next.js middleware (which can't read localStorage).
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
@@ -15,14 +11,20 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-
-  // Actions
   setAuth: (user: User, token: string) => void;
   logout: () => void;
 }
 
+function setCookie(name: string, value: string, days: number) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
+function deleteCookie(name: string) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+}
+
 export const useAuthStore = create<AuthState>()(
-  // persist middleware: saves state to localStorage automatically
   persist(
     (set) => ({
       user: null,
@@ -30,20 +32,21 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       setAuth: (user, token) => {
-        // Also save token to localStorage for the API interceptor
         localStorage.setItem("access_token", token);
+        setCookie("access_token", token, 1); // 1 day cookie for middleware
         set({ user, token, isAuthenticated: true });
       },
 
       logout: () => {
         localStorage.removeItem("access_token");
+        deleteCookie("access_token");
         set({ user: null, token: null, isAuthenticated: false });
       },
     }),
     {
-      name: "mindguard-auth",              // localStorage key
+      name: "mindguard-auth",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({            // only persist these fields
+      partialize: (state) => ({
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
