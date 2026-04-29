@@ -1,0 +1,104 @@
+# docker-compose.yml
+#
+# Defines all 4 services that make up the MindGuard stack:
+#   1. db       — PostgreSQL database
+#   2. redis    — Redis cache
+#   3. backend  — FastAPI Python API
+#   4. frontend — Next.js React app
+#
+# HOW SERVICES TALK TO EACH OTHER:
+# Docker creates a private network. Services use each other's NAMES as hostnames.
+# e.g. the backend connects to the database at host "db" — not "localhost".
+# That's why DATABASE_URL is: postgresql+asyncpg://...@db:5432/mindguard
+#                                                              ^^ service name
+
+version: "3.9"
+
+services:
+
+  # ── 1. PostgreSQL Database ──────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine           # alpine = small base image
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mindguard
+      POSTGRES_PASSWORD: mindguard      # CHANGE THIS before any real deployment
+      POSTGRES_DB: mindguard
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # persist data between restarts
+    ports:
+      - "5432:5432"                     # expose to host so you can connect with pgAdmin/DBeaver
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mindguard -d mindguard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── 2. Redis Cache ──────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 20 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ── 3. FastAPI Backend ──────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env                            # loads all variables from the .env file
+    environment:
+      # Override specific values for Docker environment
+      DATABASE_URL: "postgresql+asyncpg://mindguard:mindguard@db:5432/mindguard"
+      REDIS_URL: "redis://redis:6379/0"
+      DEBUG: "true"
+      ENVIRONMENT: "development"
+    volumes:
+      - ./backend/app:/app/app          # mount source code — enables hot reload in dev
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy      # wait for DB to be ready before starting
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── 4. Next.js Frontend ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:8000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+# ── Named Volumes ─────────────────────────────────────────────────────────────
+# Named volumes survive container restarts and rebuilds.
+# Your DB data won't be lost when you restart Docker.
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

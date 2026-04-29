@@ -1,0 +1,40 @@
+# ── Secrets ───────────────────────────────────────────────────────────────────
+.env                    # NEVER commit this — it has your keys and passwords
+*.pem
+*.key
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+.pytest_cache/
+.mypy_cache/
+
+# ── ML Models (can be large — store on cloud storage or model registry) ──────
+backend/app/ml/models/*.pkl
+backend/app/ml/models/*.joblib
+*.pkl
+*.joblib
+
+# ── Node / Next.js ────────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+*.log
+npm-debug.log*
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+# Don't ignore docker-compose.yml — that's needed
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+*.csv
+*.sqlite
