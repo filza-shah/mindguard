@@ -1,27 +1,30 @@
 "use client";
+// frontend/src/app/companion/page.tsx
 
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { companionApi, analyticsApi, getApiErrorMessage } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-store";
 import type { ChatMessage, AnalyticsSummary } from "@/types";
+import AppShell from "@/components/AppShell";
 
-// Crisis keywords — if detected, show resources immediately
 const CRISIS_KEYWORDS = [
   "suicide", "suicidal", "kill myself", "end my life", "don't want to live",
-  "self harm", "self-harm", "hurt myself", "cutting", "overdose",
-  "not worth living", "better off dead", "want to die",
+  "self harm", "self-harm", "hurt myself", "cutting", "overdose", "want to die",
 ];
 
-function containsCrisisContent(text: string): boolean {
-  const lower = text.toLowerCase();
-  return CRISIS_KEYWORDS.some((kw) => lower.includes(kw));
+function hasCrisis(text: string) {
+  return CRISIS_KEYWORDS.some(k => text.toLowerCase().includes(k));
 }
 
+const STARTERS = [
+  "I've been feeling really anxious lately",
+  "Had a good day today and wanted to share",
+  "Struggling to sleep and it's affecting my mood",
+  "Feeling a bit overwhelmed with everything",
+];
+
 export default function CompanionPage() {
-  const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,338 +32,189 @@ export default function CompanionPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [showCrisis, setShowCrisis] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load mood context on mount so companion is aware of recent patterns
-  useEffect(() => {
-    analyticsApi.getSummary().then(setSummary).catch(() => null);
-  }, []);
+  useEffect(() => { analyticsApi.getSummary().then(setSummary).catch(() => null); }, []);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
 
-  // Auto-scroll to bottom on new messages
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
-
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
-
-  const sendMessage = async () => {
+  const send = async () => {
     const text = input.trim();
     if (!text || loading) return;
+    if (hasCrisis(text)) setShowCrisis(true);
 
-    // Check for crisis content before sending
-    if (containsCrisisContent(text)) {
-      setShowCrisis(true);
-    }
-
-    const userMessage: ChatMessage = { role: "user", content: text };
-    const updatedHistory = [...messages, userMessage];
-
-    setMessages(updatedHistory);
+    const userMsg: ChatMessage = { role: "user", content: text };
+    const history = [...messages, userMsg];
+    setMessages(history);
     setInput("");
     setLoading(true);
     setError(null);
 
     try {
-      const moodContext = summary
-        ? {
-            avg_mood_7d: summary.avg_mood_7d,
-            trend: summary.trend_direction,
-            streak: summary.streak_days,
-          }
-        : undefined;
-
-      const res = await companionApi.chat(text, messages, moodContext);
-
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        content: res.response,
-      };
-
-      setMessages([...updatedHistory, assistantMessage]);
+      const ctx = summary ? { avg_mood_7d: summary.avg_mood_7d, trend: summary.trend_direction } : undefined;
+      const res = await companionApi.chat(text, messages, ctx);
+      setMessages([...history, { role: "assistant", content: res.response }]);
     } catch (err) {
       setError(getApiErrorMessage(err));
-      // Remove the user message if the request failed
       setMessages(messages);
     } finally {
       setLoading(false);
-      inputRef.current?.focus();
+      textareaRef.current?.focus();
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Send on Enter, new line on Shift+Enter
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+  const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
-  const clearChat = () => {
-    setMessages([]);
-    setShowCrisis(false);
-    setError(null);
+  const setStarter = (text: string) => {
+    setInput(text);
+    textareaRef.current?.focus();
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">🧠</span>
-          <span className="font-bold text-slate-800">MindGuard</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="btn-secondary text-sm py-2">
-            ← Dashboard
-          </Link>
-          <Link href="/checkin" className="btn-primary text-sm py-2">
-            + Check In
-          </Link>
-          <button onClick={handleLogout} className="btn-secondary text-sm py-2">
-            Logout
-          </button>
-        </div>
-      </nav>
-
-      <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full p-4 gap-4">
+    <AppShell>
+      <div className="flex flex-col h-screen md:h-auto md:min-h-screen max-w-2xl mx-auto px-4 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              AI Companion 🤖
+            <h1 className="display-font text-3xl" style={{ color: "var(--charcoal)", letterSpacing: "-0.02em" }}>
+              AI Companion
             </h1>
-            <p className="text-slate-500 text-sm mt-0.5">
-              A safe space to talk about how you&apos;re feeling
+            <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>
+              A safe, private space to talk
             </p>
           </div>
           {messages.length > 0 && (
-            <button
-              onClick={clearChat}
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              Clear chat
+            <button onClick={() => { setMessages([]); setShowCrisis(false); }}
+              className="text-xs py-1.5 px-3 rounded-lg transition-colors"
+              style={{ color: "var(--muted)", background: "var(--stone)" }}>
+              Clear
             </button>
           )}
         </div>
 
-        {/* Mood context banner */}
-        {summary && summary.avg_mood_7d && (
-          <div className="bg-brand-50 border border-brand-100 rounded-xl px-4 py-2.5 text-sm text-brand-700 flex items-center gap-2">
+        {/* Mood context */}
+        {summary?.avg_mood_7d && (
+          <div className="mb-4 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
+            style={{ background: "var(--sage-light)", color: "var(--sage-dark)" }}>
             <span>📊</span>
             <span>
-              Your 7-day average mood is{" "}
-              <strong>{summary.avg_mood_7d.toFixed(1)}/5</strong> — trend is{" "}
-              <strong>{summary.trend_direction}</strong>. The companion is
-              aware of this context.
+              Your 7-day mood avg is <strong>{summary.avg_mood_7d.toFixed(1)}/5</strong> — {summary.trend_direction}
             </span>
           </div>
         )}
 
-        {/* Crisis resources banner */}
+        {/* Crisis banner */}
         {showCrisis && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-            <p className="font-semibold text-red-800 mb-2">
-              🆘 It sounds like you might be going through something serious.
+          <div className="mb-4 rounded-xl p-4" style={{ background: "#FFE8E8", border: "1px solid #F0A0A0" }}>
+            <p className="font-semibold text-sm mb-2" style={{ color: "#C0392B" }}>
+              🆘 It sounds like you may be going through something serious
             </p>
-            <p className="text-red-700 text-sm mb-3">
-              Please reach out to a real person who can help right now:
-            </p>
-            <div className="space-y-1.5 text-sm">
-              <div className="flex items-center gap-2 text-red-700">
-                <span>📱</span>
-                <span>
-                  <strong>988 Suicide & Crisis Lifeline</strong> — call or text{" "}
-                  <strong>988</strong>
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-red-700">
-                <span>💬</span>
-                <span>
-                  <strong>Crisis Text Line</strong> — text{" "}
-                  <strong>HOME to 741741</strong>
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-red-700">
-                <span>🌐</span>
-                <span>
-                  <strong>International:</strong>{" "}
-                  <a
-                    href="https://findahelpline.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                  >
-                    findahelpline.com
-                  </a>
-                </span>
-              </div>
+            <p className="text-xs mb-3" style={{ color: "#C0392B" }}>Please reach out to someone who can help right now:</p>
+            <div className="space-y-1.5 text-xs" style={{ color: "#C0392B" }}>
+              <p>📱 <strong>988 Suicide & Crisis Lifeline</strong> — call or text 988</p>
+              <p>💬 <strong>Crisis Text Line</strong> — text HOME to 741741</p>
+              <p>🌐 <strong>International:</strong> findahelpline.com</p>
             </div>
-            <button
-              onClick={() => setShowCrisis(false)}
-              className="text-xs text-red-500 mt-3 hover:text-red-700"
-            >
+            <button onClick={() => setShowCrisis(false)}
+              className="text-xs mt-3" style={{ color: "#C0392B", opacity: 0.7 }}>
               Dismiss
             </button>
           </div>
         )}
 
         {/* Chat window */}
-        <div className="flex-1 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col min-h-[400px]">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 card flex flex-col min-h-[400px] p-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {messages.length === 0 && (
-              <WelcomeScreen username={user?.display_name ?? user?.username} />
-            )}
-
-            {messages.map((msg, i) => (
-              <MessageBubble key={i} message={msg} />
-            ))}
-
-            {/* Typing indicator */}
-            {loading && (
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
-                  <span className="text-sm">🤖</span>
-                </div>
-                <div className="bg-slate-100 rounded-2xl rounded-tl-sm px-4 py-3">
-                  <div className="flex gap-1 items-center h-4">
-                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:300ms]" />
-                  </div>
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-4"
+                  style={{ background: "var(--sage-light)" }}>🤖</div>
+                <h3 className="font-semibold mb-1" style={{ color: "var(--charcoal)" }}>
+                  Hi {user?.display_name ?? "there"} 👋
+                </h3>
+                <p className="text-sm mb-6 max-w-xs" style={{ color: "var(--muted)", lineHeight: "1.6" }}>
+                  I&apos;m here to listen. Share whatever is on your mind — this is a safe, private space.
+                </p>
+                <div className="w-full max-w-xs space-y-2">
+                  {STARTERS.map((s) => (
+                    <button key={s} onClick={() => setStarter(s)}
+                      className="w-full text-left text-sm px-4 py-2.5 rounded-xl transition-colors"
+                      style={{ background: "var(--stone)", color: "var(--charcoal)", border: "1px solid var(--border)" }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--sage-light)"; (e.currentTarget as HTMLElement).style.color = "var(--sage-dark)"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--stone)"; (e.currentTarget as HTMLElement).style.color = "var(--charcoal)"; }}>
+                      &ldquo;{s}&rdquo;
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex items-end gap-2 animate-fade-in ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0"
+                  style={{ background: msg.role === "user" ? "var(--charcoal)" : "var(--sage-light)", color: msg.role === "user" ? "white" : "var(--sage-dark)" }}>
+                  {msg.role === "user" ? "U" : "AI"}
+                </div>
+                <div className="max-w-[78%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap"
+                  style={msg.role === "user"
+                    ? { background: "var(--charcoal)", color: "white", borderBottomRightRadius: "4px" }
+                    : { background: "var(--stone)", color: "var(--charcoal)", border: "1px solid var(--border)", borderBottomLeftRadius: "4px" }}>
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+
+            {loading && (
+              <div className="flex items-end gap-2">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0"
+                  style={{ background: "var(--sage-light)", color: "var(--sage-dark)" }}>AI</div>
+                <div className="px-4 py-3 rounded-2xl" style={{ background: "var(--stone)", border: "1px solid var(--border)" }}>
+                  <div className="flex gap-1">
+                    {[0, 1, 2].map(i => (
+                      <span key={i} className="w-2 h-2 rounded-full animate-bounce"
+                        style={{ background: "var(--muted)", animationDelay: `${i * 150}ms` }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
             <div ref={bottomRef} />
           </div>
 
-          {/* Error */}
           {error && (
-            <div className="mx-4 mb-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-red-700 text-xs">
+            <div className="mx-4 mb-2 px-3 py-2 rounded-lg text-xs" style={{ background: "#FFE8E8", color: "#C0392B" }}>
               {error}
             </div>
           )}
 
-          {/* Input area */}
-          <div className="border-t border-slate-100 p-4 flex gap-3 items-end">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Share how you're feeling… (Enter to send, Shift+Enter for new line)"
-              rows={1}
-              className="flex-1 input resize-none min-h-[44px] max-h-32 py-2.5"
-              style={{ height: "auto" }}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = "auto";
-                target.style.height = `${target.scrollHeight}px`;
-              }}
-              disabled={loading}
-            />
-            <button
-              onClick={sendMessage}
-              disabled={loading || !input.trim()}
-              className="btn-primary py-2.5 px-4 shrink-0"
-            >
-              {loading ? (
-                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin block" />
-              ) : (
-                "Send →"
-              )}
+          {/* Input */}
+          <div className="border-t p-4 flex gap-3 items-end" style={{ borderColor: "var(--border)" }}>
+            <textarea ref={textareaRef} value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="Share how you're feeling… (Enter to send)"
+              rows={1} disabled={loading}
+              className="flex-1 input resize-none text-sm py-2.5"
+              style={{ minHeight: "44px", maxHeight: "120px" }}
+              onInput={e => {
+                const t = e.target as HTMLTextAreaElement;
+                t.style.height = "auto";
+                t.style.height = `${t.scrollHeight}px`;
+              }} />
+            <button onClick={send} disabled={loading || !input.trim()}
+              className="btn-primary shrink-0 py-2.5 px-4">
+              {loading
+                ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin block" />
+                : "→"}
             </button>
           </div>
         </div>
 
-        {/* Disclaimer */}
-        <p className="text-xs text-slate-400 text-center pb-2">
-          MindGuard AI is not a therapist and cannot provide clinical advice.
-          For urgent help contact 988 or text HOME to 741741.
+        <p className="text-xs text-center mt-4" style={{ color: "var(--muted)" }}>
+          Not a therapist. For urgent help contact 988 or text HOME to 741741.
         </p>
       </div>
-    </div>
-  );
-}
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function WelcomeScreen({ username }: { username?: string }) {
-  const starters = [
-    "I've been feeling really anxious lately",
-    "Had a good day today and wanted to share",
-    "I'm struggling to sleep and it's affecting my mood",
-    "Feeling a bit overwhelmed with everything",
-  ];
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full py-8 text-center">
-      <div className="w-16 h-16 bg-brand-50 rounded-full flex items-center justify-center mb-4">
-        <span className="text-3xl">🤖</span>
-      </div>
-      <h2 className="text-lg font-semibold text-slate-800 mb-1">
-        Hi {username ? username : "there"} 👋
-      </h2>
-      <p className="text-slate-500 text-sm max-w-sm mb-6">
-        I&apos;m here to listen and support you. This is a safe, private space
-        — share whatever is on your mind.
-      </p>
-
-      <div className="w-full max-w-sm space-y-2">
-        <p className="text-xs text-slate-400 mb-2">Try saying:</p>
-        {starters.map((s) => (
-          <button
-            key={s}
-            onClick={() => {
-              const textarea = document.querySelector("textarea");
-              if (textarea) {
-                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-                  window.HTMLTextAreaElement.prototype,
-                  "value"
-                )?.set;
-                nativeInputValueSetter?.call(textarea, s);
-                textarea.dispatchEvent(new Event("input", { bubbles: true }));
-                textarea.focus();
-              }
-            }}
-            className="w-full text-left px-4 py-2.5 rounded-xl bg-slate-50 hover:bg-brand-50 hover:text-brand-700 text-slate-600 text-sm transition-colors border border-slate-100"
-          >
-            &ldquo;{s}&rdquo;
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MessageBubble({ message }: { message: ChatMessage }) {
-  const isUser = message.role === "user";
-
-  return (
-    <div className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
-      {/* Avatar */}
-      <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-          isUser ? "bg-brand-500" : "bg-brand-100"
-        }`}
-      >
-        <span className="text-sm">{isUser ? "👤" : "🤖"}</span>
-      </div>
-
-      {/* Bubble */}
-      <div
-        className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-          isUser
-            ? "bg-brand-500 text-white rounded-tr-sm"
-            : "bg-slate-100 text-slate-800 rounded-tl-sm"
-        }`}
-      >
-        {message.content}
-      </div>
-    </div>
+    </AppShell>
   );
 }

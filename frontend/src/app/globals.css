@@ -1,41 +1,114 @@
 /* frontend/src/app/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom component classes — reusable across the app */
+:root {
+  --sage: #7C9A92;
+  --sage-light: #EEF3F1;
+  --sage-dark: #4A6B62;
+  --cream: #FAF9F6;
+  --stone: #F5F3EE;
+  --charcoal: #1C2B2A;
+  --muted: #6B7B7A;
+  --border: #E2E8E6;
+  --shadow-sm: 0 1px 3px rgba(28,43,42,0.06), 0 1px 2px rgba(28,43,42,0.04);
+  --shadow-md: 0 4px 16px rgba(28,43,42,0.08), 0 2px 4px rgba(28,43,42,0.04);
+  --shadow-lg: 0 12px 40px rgba(28,43,42,0.12);
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-font-smoothing: antialiased; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background-color: var(--cream);
+  color: var(--charcoal);
+  line-height: 1.6;
+}
+
 @layer components {
-  /* Card base style */
   .card {
-    @apply bg-white rounded-2xl shadow-sm border border-slate-100 p-6;
+    @apply bg-white rounded-2xl p-6;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
   }
 
-  /* Primary button */
+  .card-hover {
+    @apply card transition-all duration-200 cursor-pointer;
+  }
+  .card-hover:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
   .btn-primary {
-    @apply bg-brand-500 text-white font-medium px-6 py-2.5 rounded-xl
-           hover:bg-brand-600 active:bg-brand-700
-           transition-colors duration-150
-           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2
-           disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 focus:outline-none text-sm;
+    background: var(--charcoal);
+    color: white;
+    padding: 10px 20px;
+    letter-spacing: -0.01em;
   }
+  .btn-primary:hover { background: var(--sage-dark); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  /* Secondary button */
   .btn-secondary {
-    @apply bg-slate-100 text-slate-700 font-medium px-6 py-2.5 rounded-xl
-           hover:bg-slate-200 active:bg-slate-300
-           transition-colors duration-150
-           focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 focus:outline-none text-sm;
+    background: var(--stone);
+    color: var(--charcoal);
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover {
+    background: var(--sage-light);
+    border-color: var(--sage);
+    color: var(--sage-dark);
   }
 
-  /* Text input */
+  .btn-sage {
+    @apply inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 text-sm;
+    background: var(--sage);
+    color: white;
+    padding: 10px 20px;
+  }
+  .btn-sage:hover { background: var(--sage-dark); }
+
   .input {
-    @apply w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white
-           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
-           placeholder:text-slate-400 text-sm;
+    @apply w-full rounded-xl transition-all duration-150 text-sm;
+    padding: 11px 16px;
+    border: 1.5px solid var(--border);
+    background: white;
+    color: var(--charcoal);
+    font-family: 'DM Sans', sans-serif;
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--sage);
+    box-shadow: 0 0 0 3px rgba(124,154,146,0.15);
+  }
+  .input::placeholder { color: var(--muted); opacity: 0.7; }
+
+  .display-font { font-family: 'DM Serif Display', serif; }
+  .section-title { @apply font-semibold text-lg; color: var(--charcoal); letter-spacing: -0.02em; }
+  .label { @apply text-xs font-medium uppercase tracking-wider; color: var(--muted); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
-  /* Section heading */
-  .section-title {
-    @apply text-xl font-semibold text-slate-800;
-  }
+  .animate-fade-up { animation: fadeUp 0.4s ease forwards; }
+  .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+  .stagger-1 { animation-delay: 0.05s; opacity: 0; }
+  .stagger-2 { animation-delay: 0.1s; opacity: 0; }
+  .stagger-3 { animation-delay: 0.15s; opacity: 0; }
+  .stagger-4 { animation-delay: 0.2s; opacity: 0; }
 }
