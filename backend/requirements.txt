@@ -1,38 +1,36 @@
 # ── Web Framework ────────────────────────────────────────────────────────────
 fastapi==0.111.0
 uvicorn[standard]==0.30.1
-python-multipart==0.0.9        # needed for form data (login)
+python-multipart==0.0.9
 
 # ── Database ─────────────────────────────────────────────────────────────────
-sqlalchemy==2.0.30             # ORM — maps Python classes to DB tables
-asyncpg==0.29.0                # async PostgreSQL driver
-alembic==1.13.1                # database migrations (like "git for your schema")
-redis==5.0.4                   # Redis client for caching & sessions
+sqlalchemy==2.0.30
+asyncpg==0.29.0
+alembic==1.13.1
+redis==5.0.4
 
 # ── Auth & Security ───────────────────────────────────────────────────────────
-python-jose[cryptography]==3.3.0   # JWT token creation/verification
-bcrypt==4.1.3                       # password hashing (one-way, can't reverse)
+python-jose[cryptography]==3.3.0
+bcrypt==4.1.3
 passlib[bcrypt]==1.7.4
-cryptography==42.0.7                # encrypts sensitive DB fields
+cryptography==42.0.7
 
 # ── ML & NLP ─────────────────────────────────────────────────────────────────
 scikit-learn==1.5.0
-transformers==4.41.2           # HuggingFace — pre-trained models
-torch==2.3.0                   # PyTorch (HuggingFace dependency)
 numpy==1.26.4
 pandas==2.2.2
-joblib==1.4.2                  # save/load trained ML models
+joblib==1.4.2
 
-# ── AI Layer (Claude API) ─────────────────────────────────────────────────────
+# ── AI Layer ─────────────────────────────────────────────────────────────────
 anthropic==0.28.0
 
 # ── Config & Utilities ────────────────────────────────────────────────────────
-pydantic==2.7.1                # data validation (FastAPI uses this heavily)
-pydantic-settings==2.3.0       # load config from .env files
+pydantic==2.7.1
+pydantic-settings==2.3.0
 python-dotenv==1.0.1
-httpx==0.27.0                  # async HTTP client (for calling external APIs)
+httpx==0.27.0
 
-# ── Dev & Testing ─────────────────────────────────────────────────────────────
+# ── Testing ───────────────────────────────────────────────────────────────────
 pytest==8.2.2
 pytest-asyncio==0.23.7
-httpx==0.27.0                  # also used for test client
+aiosqlite==0.20.0

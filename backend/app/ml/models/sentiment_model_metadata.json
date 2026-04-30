@@ -1,0 +1,31 @@
+{
+  "model_name": "MindGuard Sentiment Classifier v1.0",
+  "trained_at": "2026-04-29T22:25:41.022429+00:00",
+  "architecture": "TF-IDF + Voting Ensemble (LR + LinearSVC + ComplementNB)",
+  "training_samples": 168,
+  "test_samples": 42,
+  "classes": [
+    "negative",
+    "neutral",
+    "positive"
+  ],
+  "metrics": {
+    "accuracy": 0.9524,
+    "f1_macro": 0.9569,
+    "f1_weighted": 0.9523
+  },
+  "hyperparameters": {
+    "tfidf_ngram_range": "(1, 2)",
+    "tfidf_max_features": 10000,
+    "lr_C": 1.0,
+    "svc_C": 0.5,
+    "nb_alpha": 0.3,
+    "ensemble_weights": [
+      3,
+      2,
+      1
+    ]
+  },
+  "intended_use": "Sentiment analysis of free-text mood journal entries for youth mental health tracking",
+  "limitations": "Trained on a small curated dataset. May not generalise to all dialects or expressions."
+}

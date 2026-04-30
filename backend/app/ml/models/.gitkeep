@@ -1,0 +1,2 @@
+# Trained model files (.joblib) are stored here after running train.py
+# These are excluded from git (too large) — see .gitignore
