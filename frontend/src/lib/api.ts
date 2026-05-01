@@ -6,7 +6,7 @@ import type {
   AnalyticsSummary, MoodTrend, CompanionResponse, ChatMessage, AnomalyAlert,
 } from "@/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://mindguard-1x3w.onrender.com";
 
 export const apiClient = axios.create({
   baseURL: `${BASE_URL}/api/v1`,
