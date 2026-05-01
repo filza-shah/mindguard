@@ -1,398 +1,216 @@
-# MindGuard 🧠
-### Behavioural Pattern Detection & Early Intervention Platform for Youth Mental Health
+# MindGuard
 
-> A full-stack ML engineering portfolio project — built to demonstrate production-grade software development, custom model training, and system design skills.
+**Behavioural pattern detection and early intervention for youth mental health.**
 
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat&logo=next.js&logoColor=white)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat&logo=postgresql&logoColor=white)](https://postgresql.org)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white)](https://docker.com)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.5-F7931E?style=flat&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
 
----
-
-## What is MindGuard?
-
-MindGuard is a behavioural pattern detection platform that helps young people (ages 10–25) track their mental wellbeing through daily check-ins. It uses machine learning to detect concerning patterns before they escalate, and provides an AI-powered conversational companion for emotional support.
-
-This is not a toy app — it features a custom-trained NLP sentiment classifier, real-time Z-score anomaly detection, field-level encryption for sensitive data, JWT authentication, and a full CI/CD pipeline.
+🔗 **Live:** [mindguard-frontend.onrender.com](https://mindguard-frontend.onrender.com) &nbsp;|&nbsp; 📖 **API Docs:** [mindguard-1x3w.onrender.com/api/docs](https://mindguard-1x3w.onrender.com/api/docs)
 
 ---
 
-## Live Demo
+## Overview
 
-> 🔗 **[mindguard.onrender.com](https://mindguard.onrender.com)** ← add your URL here
+MindGuard is a full-stack web application I built to help young people (ages 10–25) track their emotional wellbeing through daily check-ins. What makes it different from a basic mood journal is the ML layer underneath — a custom-trained sentiment classifier runs on every note, and a Z-score anomaly detector compares each check-in against the user's personal 30-day baseline to surface early warning signs automatically.
 
-**Test credentials:**
-```
-Email:    demo@mindguard.app
-Password: Demo1234!
-```
+I built this as my capstone portfolio project after graduating with a CS Honours degree from the University of Guelph in April 2026. The goal was to build something technically serious — not a CRUD app dressed up as ML.
 
 ---
 
-## Tech Stack
+## What it does
 
-### Backend
-| Technology | Purpose |
-|-----------|---------|
-| **FastAPI** (Python 3.12) | Async REST API framework |
-| **SQLAlchemy** (async) | ORM with async PostgreSQL driver |
-| **PostgreSQL 16** | Primary database |
-| **Redis 7** | Caching and session management |
-| **Alembic** | Database schema migrations |
-| **JWT + bcrypt** | Authentication and password hashing |
-| **Fernet encryption** | Field-level encryption for sensitive data |
+Users check in daily by rating their mood, energy, sleep, and optionally writing a private journal note. The system then:
 
-### Machine Learning
-| Technology | Purpose |
-|-----------|---------|
-| **scikit-learn** | TF-IDF vectorizer + ensemble classifier |
-| **Custom NLP model** | Mental health sentiment analysis (95.2% accuracy) |
-| **Z-score algorithm** | Real-time behavioural anomaly detection |
-| **HuggingFace** | Model architecture (Milestone 8 upgrade path) |
+- Runs sentiment analysis on the note using a custom scikit-learn classifier trained on mental health language
+- Calculates a Z-score comparing today's mood against their 30-day personal baseline
+- Generates an anomaly alert if the mood drops significantly (configurable thresholds: LOW / MEDIUM / HIGH / CRITICAL)
+- Shows interactive trend charts on the dashboard so users can see patterns over time
+- Provides access to an AI companion (Llama 3.3 via Groq) for supportive conversation
 
-### Frontend
-| Technology | Purpose |
-|-----------|---------|
-| **Next.js 14** (TypeScript) | React framework with App Router |
-| **Tailwind CSS** | Utility-first styling |
-| **Recharts** | Mood trend data visualizations |
-| **Zustand** | Global auth state management |
-| **React Hook Form + Zod** | Form validation |
-| **Axios** | HTTP client with JWT interceptor |
+All journal notes are encrypted at rest using Fernet symmetric encryption — even with full database access, notes are unreadable without the encryption key.
 
-### DevOps
-| Technology | Purpose |
-|-----------|---------|
-| **Docker + Docker Compose** | Containerization and local orchestration |
-| **GitHub Actions** | CI/CD pipeline (test → build → deploy) |
-| **AWS ECR + ECS Fargate** | Production container registry and runtime |
+---
+
+## Tech stack
+
+**Backend** — FastAPI (Python 3.12), SQLAlchemy async, PostgreSQL 16, Redis, JWT + bcrypt auth, Fernet field encryption
+
+**ML** — Custom TF-IDF + Voting Ensemble classifier (scikit-learn), Z-score anomaly detection, lexicon fallback
+
+**Frontend** — Next.js 14 (TypeScript), Tailwind CSS, Recharts, Zustand, React Hook Form + Zod
+
+**DevOps** — Docker Compose, GitHub Actions CI/CD, Render (production)
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      Client Browser                      │
-│                   Next.js + TypeScript                   │
-└──────────────────────────┬──────────────────────────────┘
-                           │ HTTPS
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│                    FastAPI Backend                        │
-│                                                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────┐  │
-│  │   Auth   │  │ Checkins │  │Analytics │  │  AI    │  │
-│  │  Router  │  │  Router  │  │  Router  │  │Companion│  │
-│  └──────────┘  └────┬─────┘  └──────────┘  └────────┘  │
-│                     │                                    │
-│  ┌──────────────────▼──────────────────────────────────┐ │
-│  │              Background Tasks                        │ │
-│  │  ┌─────────────────┐  ┌──────────────────────────┐  │ │
-│  │  │ Sentiment Model │  │  Anomaly Detection Engine │  │ │
-│  │  │ TF-IDF+Ensemble │  │  Z-score vs 30d baseline  │  │ │
-│  │  └─────────────────┘  └──────────────────────────┘  │ │
-│  └─────────────────────────────────────────────────────┘ │
-└────────────────────┬────────────────────────────────────┘
-                     │
-        ┌────────────┴────────────┐
-        ▼                         ▼
-┌──────────────┐         ┌──────────────┐
-│  PostgreSQL  │         │    Redis     │
-│  (primary)   │         │   (cache)    │
-└──────────────┘         └──────────────┘
+Browser (Next.js)
+       │
+       ▼ HTTPS
+FastAPI Backend
+  ├── Auth router         (JWT + bcrypt)
+  ├── Check-ins router    (encrypted notes, background tasks)
+  ├── Analytics router    (aggregated trends, streak calc)
+  ├── Alerts router       (anomaly management)
+  └── Companion router    (Groq / Llama 3.3)
+       │
+       ├── Background: Sentiment classifier (TF-IDF + Ensemble)
+       └── Background: Z-score anomaly detection
+       │
+  ┌────┴────┐
+  │         │
+PostgreSQL  Redis
 ```
 
 ---
 
-## Core Features
+## The ML model
 
-### 1. Daily Mood Check-in System
-Multi-step form capturing mood score (1-5), energy level, anxiety level, sleep hours, activities, and an optional encrypted journal note. Data is validated server-side with Pydantic before persisting.
+I trained a 3-class sentiment classifier specifically for mental health text — general sentiment models (like VADER) don't handle words like "empty", "numb", or "flat" correctly in this context.
 
-### 2. Real-time Anomaly Detection Engine
-After every check-in, a background task runs Z-score analysis comparing the user's current mood against their personal 30-day baseline. Alerts are generated at four severity levels (LOW/MEDIUM/HIGH/CRITICAL) when the Z-score falls below configurable thresholds. A second detector flags consecutive low-mood days (≥3 days at or below 2/5).
+**Architecture:** TF-IDF vectorizer (bigrams, 10k features) → soft-voting ensemble of Logistic Regression, LinearSVC (calibrated), and Complement Naive Bayes
 
-### 3. Custom NLP Sentiment Classifier
-A scikit-learn pipeline trained on a curated mental health corpus:
-- **Architecture:** TF-IDF vectorizer (bigrams, 10k features) → Voting Ensemble (Logistic Regression + LinearSVC + ComplementNB)
-- **Accuracy:** 95.2% on hold-out test set
-- **F1 (macro):** 0.957
-- **5-fold CV:** 0.991 mean F1
-- Falls back to a lexicon-based analyser if the model file isn't present
+**Results on hold-out test set:**
 
-### 4. AI Conversational Companion
-Claude-powered (claude-sonnet-4) chat interface with a carefully engineered system prompt for youth mental health contexts. Includes mood context injection, crisis keyword detection with automatic resource display, and conversation history management.
-
-### 5. Interactive Analytics Dashboard
-Recharts-powered mood trend visualizations with 7-day/30-day averages, streak tracking, trend direction detection, and a summary card grid.
-
-### 6. Security
-- Passwords: bcrypt hashed (irreversible, salted)
-- Auth: JWT tokens with configurable expiry
-- Sensitive fields: Fernet symmetric encryption at rest
-- CORS: origin allowlist
-- Non-root Docker containers
-- Generic error messages to prevent user enumeration
-
----
-
-## ML Model Card
-
-| Property | Details |
-|----------|---------|
-| Model name | MindGuard Sentiment Classifier v1.0 |
-| Task | 3-class sentiment classification |
-| Architecture | TF-IDF (bigrams) + Voting Ensemble |
-| Training samples | 168 |
-| Test samples | 42 |
+| Metric | Score |
+|--------|-------|
 | Accuracy | 95.2% |
 | F1 macro | 0.957 |
 | 5-fold CV F1 | 0.991 ± 0.036 |
 | Inference time | < 10ms |
-| Classes | positive / negative / neutral |
 
-Full model card: [MODEL_CARD.md](./MODEL_CARD.md)
-
----
-
-## Project Structure
-
-```
-mindguard/
-├── backend/
-│   ├── app/
-│   │   ├── core/
-│   │   │   ├── config.py          # Pydantic Settings — env var management
-│   │   │   ├── database.py        # Async SQLAlchemy engine + session factory
-│   │   │   ├── security.py        # JWT + bcrypt + Fernet encryption
-│   │   │   └── deps.py            # FastAPI dependency injection (auth guard)
-│   │   ├── models/
-│   │   │   └── user.py            # SQLAlchemy models: User, MoodCheckIn, AnomalyAlert
-│   │   ├── schemas/
-│   │   │   └── user.py            # Pydantic request/response validators
-│   │   ├── routers/
-│   │   │   ├── auth.py            # POST /auth/register, /auth/login, GET /auth/me
-│   │   │   ├── checkins.py        # CRUD for mood check-ins + background tasks
-│   │   │   ├── analytics.py       # Aggregated trends + streak calculation
-│   │   │   ├── companion.py       # Claude API integration
-│   │   │   └── alerts.py          # Anomaly alert management
-│   │   ├── services/
-│   │   │   ├── anomaly_detection.py  # Z-score engine + consecutive low mood detector
-│   │   │   └── sentiment_service.py  # ML model inference + lexicon fallback
-│   │   └── ml/
-│   │       ├── dataset.py         # Training corpus + augmentation pipeline
-│   │       ├── train.py           # Model training script
-│   │       ├── evaluate.py        # Evaluation: hold-out + 5-fold CV
-│   │       └── models/            # Saved .joblib model files (git-ignored)
-│   ├── tests/
-│   │   └── test_auth.py           # 14 integration tests
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   └── src/
-│       ├── app/
-│       │   ├── page.tsx           # Landing page
-│       │   ├── dashboard/         # Main analytics dashboard
-│       │   ├── checkin/           # Multi-step check-in form
-│       │   ├── companion/         # AI companion chat UI
-│       │   ├── alerts/            # Anomaly alert dashboard
-│       │   └── (auth)/            # Login + register pages
-│       ├── components/
-│       │   ├── AppShell.tsx       # Sidebar + mobile nav layout
-│       │   └── charts/            # Recharts mood visualizations
-│       └── lib/
-│           ├── api.ts             # Axios client + all API functions
-│           └── auth-store.ts      # Zustand global auth state
-├── .github/
-│   └── workflows/deploy.yml       # GitHub Actions CI/CD pipeline
-├── aws/                           # ECS task definitions
-├── docker-compose.yml
-├── MODEL_CARD.md
-├── DEPLOYMENT.md
-└── .env.example
-```
+The model is a proof-of-concept trained on 168 curated samples. A production version would use 5,000+ samples or a fine-tuned DistilBERT — see `MODEL_CARD.md` for the full writeup.
 
 ---
 
-## Getting Started
+## Running locally
 
-### Prerequisites
-- Docker Desktop (running)
-- Git
+**Prerequisites:** Docker Desktop, Git
 
-### 1. Clone and configure
 ```bash
-git clone https://github.com/YOUR_USERNAME/mindguard.git
+git clone https://github.com/filza-shah/mindguard.git
 cd mindguard
 cp .env.example .env
 ```
 
-### 2. Generate security keys
-```bash
-# SECRET_KEY
-python3 -c "import secrets; print(secrets.token_hex(32))"
+Generate your keys and paste them into `.env`:
 
-# ENCRYPTION_KEY
+```bash
+python3 -c "import secrets; print(secrets.token_hex(32))"
 python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
-Paste both outputs into your `.env` file.
+Start everything:
 
-### 3. Start all services
 ```bash
 docker-compose up --build
 ```
 
-First build: ~5 minutes. Subsequent starts: ~30 seconds.
+Train the sentiment model (first time only):
 
-### 4. Train the sentiment model
 ```bash
 docker exec -it mindguard-backend-1 bash
 python -m app.ml.train
-python -m app.ml.evaluate
 exit
 ```
 
-### 5. Verify
-| URL | Expected |
-|-----|----------|
-| http://localhost:3000 | Landing page |
-| http://localhost:8000/api/docs | Swagger UI |
-| http://localhost:8000/health | `{"status": "healthy"}` |
+| URL | What's there |
+|-----|-------------|
+| http://localhost:3000 | Frontend |
+| http://localhost:8000/api/docs | API documentation |
+| http://localhost:8000/health | Health check |
 
 ---
 
-## Running Tests
+## Tests
 
 ```bash
 docker exec -it --user root mindguard-backend-1 bash
 pytest tests/ -v
 ```
 
-```
-14 passed in 10.85s
-
-tests/test_auth.py::test_register_success              PASSED
-tests/test_auth.py::test_register_duplicate_email      PASSED
-tests/test_auth.py::test_register_weak_password        PASSED
-tests/test_auth.py::test_login_success                 PASSED
-tests/test_auth.py::test_login_wrong_password          PASSED
-tests/test_auth.py::test_get_me_authenticated          PASSED
-tests/test_auth.py::test_get_me_unauthenticated        PASSED
-tests/test_auth.py::test_create_checkin                PASSED
-tests/test_auth.py::test_create_checkin_unauthenticated PASSED
-tests/test_auth.py::test_list_checkins                 PASSED
-tests/test_auth.py::test_sentiment_positive            PASSED
-tests/test_auth.py::test_sentiment_negative            PASSED
-tests/test_auth.py::test_sentiment_neutral             PASSED
-tests/test_auth.py::test_sentiment_empty               PASSED
-```
+14 integration tests covering auth, check-ins, and sentiment analysis — all passing.
 
 ---
 
-## API Reference
+## API
 
-Interactive docs: **http://localhost:8000/api/docs**
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/v1/auth/register` | Create account | — |
-| POST | `/api/v1/auth/login` | Login → JWT | — |
-| GET | `/api/v1/auth/me` | Current user | ✅ |
-| POST | `/api/v1/checkins/` | Submit check-in | ✅ |
-| GET | `/api/v1/checkins/` | List check-ins | ✅ |
-| GET | `/api/v1/analytics/summary` | Dashboard stats | ✅ |
-| GET | `/api/v1/analytics/trends` | Mood trend data | ✅ |
-| GET | `/api/v1/alerts/` | Anomaly alerts | ✅ |
-| PATCH | `/api/v1/alerts/{id}/acknowledge` | Acknowledge alert | ✅ |
-| POST | `/api/v1/companion/chat` | AI companion | ✅ |
-
----
-
-## CI/CD Pipeline
-
-Every push to `main` triggers a 3-stage GitHub Actions pipeline:
+Full interactive docs at `/api/docs`. Key endpoints:
 
 ```
-Push to main
-     │
-     ▼
-┌─── Test ───────────────────────────────┐
-│  Spins up PostgreSQL + Redis in CI     │
-│  Runs 14 integration tests             │
-│  TypeScript type check                 │
-└───────────────────┬────────────────────┘
-                    │ (only if tests pass)
-                    ▼
-┌─── Build ──────────────────────────────┐
-│  Builds Docker images                  │
-│  Pushes to AWS ECR                     │
-│  Tags with git SHA + latest            │
-└───────────────────┬────────────────────┘
-                    │
-                    ▼
-┌─── Deploy ─────────────────────────────┐
-│  Rolling deploy to AWS ECS Fargate     │
-│  Waits for health checks to pass       │
-│  Zero downtime                         │
-└────────────────────────────────────────┘
+POST  /api/v1/auth/register
+POST  /api/v1/auth/login
+POST  /api/v1/checkins/
+GET   /api/v1/checkins/
+GET   /api/v1/analytics/summary
+GET   /api/v1/analytics/trends
+GET   /api/v1/alerts/
+POST  /api/v1/companion/chat
 ```
 
 ---
 
-## Key Technical Decisions
+## Project structure
 
-**Why FastAPI over Django?**
-FastAPI is async-native with automatic OpenAPI documentation and Pydantic validation. Better fit for an ML-heavy API where async matters for throughput.
-
-**Why async SQLAlchemy?**
-Blocking DB calls pause all concurrent requests. Async allows the server to handle many users while waiting for DB responses.
-
-**Why a custom sentiment classifier instead of an LLM API?**
-Running inference on every check-in submission at LLM API rates would be expensive and slow. A local scikit-learn model runs in < 10ms with zero cost per inference — this is how production ML systems work.
-
-**Why Zustand over Redux?**
-Redux adds significant boilerplate for the state management needs of this app. Zustand is 1KB, uses React hooks naturally, and avoids unnecessary re-renders.
-
-**Why field-level encryption?**
-We handle sensitive mental health data. Even if the database were compromised, encrypted fields (journal notes) are unreadable without the key — defence in depth.
+```
+mindguard/
+├── backend/
+│   ├── app/
+│   │   ├── core/          # Config, DB, security, auth middleware
+│   │   ├── models/        # SQLAlchemy: User, MoodCheckIn, AnomalyAlert
+│   │   ├── schemas/       # Pydantic validators
+│   │   ├── routers/       # Auth, check-ins, analytics, alerts, companion
+│   │   ├── services/      # Anomaly detection, sentiment inference
+│   │   └── ml/            # Dataset, training, evaluation scripts
+│   └── tests/             # 14 integration tests
+├── frontend/
+│   └── src/
+│       ├── app/           # Next.js pages (dashboard, checkin, companion, alerts)
+│       ├── components/    # AppShell, charts
+│       └── lib/           # API client, auth store
+├── .github/workflows/     # GitHub Actions CI/CD
+├── docker-compose.yml
+├── MODEL_CARD.md
+└── DEPLOYMENT.md
+```
 
 ---
 
-## Roadmap
+## Milestones
 
-- [x] Milestone 1 — Full-stack scaffold + Docker
-- [x] Milestone 2 — JWT auth + protected routes
-- [x] Milestone 3 — Anomaly detection + sentiment analysis
-- [x] Milestone 4 — Custom ML classifier training
-- [x] Milestone 5 — CI/CD pipeline + test suite
-- [x] Milestone 6 — AI companion chat UI
-- [ ] Milestone 7 — Production deployment (Koyeb)
-- [ ] Milestone 8 — Fine-tuned DistilBERT classifier
+- [x] Full-stack scaffold + Docker
+- [x] JWT auth + protected routes
+- [x] Z-score anomaly detection + background tasks
+- [x] Custom NLP sentiment classifier
+- [x] GitHub Actions CI/CD + 14 integration tests
+- [x] AI companion (Llama 3.3 via Groq)
+- [x] Deployed to Render
+- [ ] DistilBERT fine-tuning on larger dataset
+
+---
+
+## Some decisions worth explaining
+
+**Why a custom classifier instead of calling an LLM?** Every check-in triggers inference. At LLM API pricing that adds up fast and adds latency. A local scikit-learn model runs in under 10ms with zero marginal cost — which is how production ML systems are actually built.
+
+**Why async SQLAlchemy?** FastAPI is built on async Python. Synchronous DB calls block the event loop, meaning one slow query stalls every other request. Async means the server can handle hundreds of concurrent users without adding servers.
+
+**Why field-level encryption?** We're handling sensitive mental health data. If the database is ever compromised, encrypted notes are still unreadable without the key. Defence in depth.
 
 ---
 
 ## Author
 
-**Filza Shah**
-Computer Science Honours Graduate — University of Guelph (April 2026)
+**Filza Shah** — CS Honours Graduate, University of Guelph (April 2026)
 
-[![GitHub](https://img.shields.io/badge/GitHub-@filzashah-181717?style=flat&logo=github)](https://github.com/filza-shah)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Filza_Shah-0A66C2?style=flat&logo=linkedin)](https://linkedin.com/in/filza-shah)
+[GitHub](https://github.com/filza-shah) · [LinkedIn](https://linkedin.com/in/filza-shah)
 
 ---
 
-## License
-
-MIT License — see [LICENSE](./LICENSE) for details.
-
----
-
-*MindGuard is not a medical device and does not provide clinical diagnosis or treatment. 
-If you are in crisis, please contact the 988 Suicide & Crisis Lifeline (call or text 988) 
-or the Crisis Text Line (text HOME to 741741).*
+*MindGuard is not a medical device and does not provide clinical advice. If you are in crisis, please contact the 988 Suicide & Crisis Lifeline (call or text 988) or text HOME to 741741.*
